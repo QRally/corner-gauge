@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pace Note Corner Gauge & Logger v1.3</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --panel-bg: #1a1a1a;
+            --accent-yellow: #ffee00;
+            --accent-green: #00ff66;
+            --accent-red: #ff3333;
+            --text-color: #ffffff;
+            --border-color: #333333;
+        }
+
+        body {
+            margin: 0;
+            padding: 12px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            margin: 0 0 12px 0;
+            font-size: 1.2rem;
+            color: var(--accent-yellow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stage-area {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        .placeholder-text {
+            position: absolute;
+            color: #777;
+            text-align: center;
+            pointer-events: none;
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+
+        .controls-panel {
+            background-color: var(--panel-bg);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #aaa;
+        }
+
+        .value-badge {
+            background-color: #000;
+            color: var(--accent-yellow);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 1rem;
+            font-weight: bold;
+            border: 1px solid var(--border-color);
+            min-width: 65px;
+            text-align: center;
+        }
+
+        button, select, input[type="file"]::file-selector-button {
+            background-color: #2a2a2a;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background-color 0.15s ease;
+        }
+
+        button:hover, select:hover, input[type="file"]::file-selector-button:hover {
+            background-color: #3a3a3a;
+            border-color: var(--accent-yellow);
+        }
+
+        button.active {
+            background-color: var(--accent-yellow);
+            color: #000;
+        }
+
+        button.btn-log {
+            background-color: var(--accent-green);
+            color: #000;
+        }
+
+        button.btn-log:hover {
+            background-color: #00cc52;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--accent-yellow);
+            cursor: pointer;
+        }
+
+        .readout-box {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            width: 100%;
+            background-color: #000;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+
+        .readout-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .readout-item span.title {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .readout-item span.val {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-green);
+            font-family: monospace;
+        }
+
+        .log-section {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-table-wrapper {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: monospace;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        th {
+            color: var(--accent-yellow);
+            border-bottom: 1px solid var(--border-color);
+            padding: 4px 6px;
+            position: sticky;
+            top: 0;
+            background-color: #000;
+        }
+
+        td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #1f1f1f;
+            color: #ddd;
+        }
+
+        tr:hover td {
+            background-color: #151515;
+        }
+
+        @media (max-width: 600px) {
+            .row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .group {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Rally Recce Corner Gauge v1.3</h1>
+
+        <div class="stage-area" id="stage">
+            <video id="videoPlayer" playsinline preload="auto" muted></video>
+            <canvas id="overlayCanvas"></canvas>
+            <div class="placeholder-text" id="placeholder">Select a video file below to start recce measurement</div>
+        </div>
+
+        <div class="controls-panel">
+            <!-- File Input & Primary Controls -->
+            <div class="row">
+                <input type="file" id="fileInput" accept="video/*">
+                <div class="group">
+                    <button id="btnPlayPause">Play</button>
+                    <button id="btnStepBack">-1 Frame</button>
+                    <button id="btnStepFwd">+1 Frame</button>
+                </div>
+                <div class="group">
+                    <label>Speed:</label>
+                    <button class="btnSpeed" data-speed="0.25">0.25x</button>
+                    <button class="btnSpeed active" data-speed="0.5">0.5x</button>
+                    <button class="btnSpeed" data-speed="1.0">1.0x</button>
+                </div>
+            </div>
+
+            <!-- Video Timeline Scrubber -->
+            <div class="row">
+                <label>Timeline:</label>
+                <input type="range" id="timeScrubber" min="0" max="100" value="0" step="0.1">
+                <span id="timeDisplay" class="value-badge">00:00.0</span>
+            </div>
+
+            <!-- Overlay & System Config -->
+            <div class="row">
+                <div class="group" style="flex-grow: 1;">
+                    <label for="angleSlider">Angle:</label>
+                    <input type="range" id="angleSlider" min="-90" max="90" value="0" step="0.5">
+                    <button id="btnResetAngle">0°</button>
+                </div>
+                <div class="group">
+                    <label for="systemSelect">Scale:</label>
+                    <select id="systemSelect">
+                        <option value="std16">1–6 (1 Fast / 6 Tight)</option>
+                        <option value="rev16">1–6 (6 Fast / 1 Tight)</option>
+                        <option value="scale19">1–9 Scale</option>
+                        <option value="clock">Clock-Face Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Readout Box -->
+            <div class="readout-box">
+                <div class="readout-item">
+                    <span class="title">Tilt Angle</span>
+                    <span class="val" id="readoutAngle">0.0°</span>
+                </div>
+                <div class="readout-item">
+                    <span class="title">Clock Face</span>
+                    <span class="val" id="readoutClock">12:00</span>
+                </div>
+                <div class="readout-item">
+                    <span class="title">Grade</span>
+                    <span class="val" id="readoutGrade">STRAIGHT</span>
+                </div>
+            </div>
+
+            <!-- Log Section -->
+            <div class="log-section">
+                <div class="row">
+                    <button id="btnLogNote" class="btn-log">+ Log Note (Press 'L')</button>
+                    <div class="group">
+                        <button id="btnExportCSV">Export CSV</button>
+                        <button id="btnClearLog">Clear</button>
+                    </div>
+                </div>
+                <div class="log-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Angle</th>
+                                <th>Clock</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <!-- Dynamic log entries -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const canvas = document.getElementById('overlayCanvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('fileInput');
+        const placeholder = document.getElementById('placeholder');
+        
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const btnStepBack = document.getElementById('btnStepBack');
+        const btnStepFwd = document.getElementById('btnStepFwd');
+        const speedButtons = document.querySelectorAll('.btnSpeed');
+        const timeScrubber = document.getElementById('timeScrubber');
+        const timeDisplay = document.getElementById('timeDisplay');
+        
+        const angleSlider = document.getElementById('angleSlider');
+        const btnResetAngle = document.getElementById('btnResetAngle');
+        const systemSelect = document.getElementById('systemSelect');
+        
+        const readoutAngle = document.getElementById('readoutAngle');
+        const readoutClock = document.getElementById('readoutClock');
+        const readoutGrade = document.getElementById('readoutGrade');
+
+        const btnLogNote = document.getElementById('btnLogNote');
+        const btnExportCSV = document.getElementById('btnExportCSV');
+        const btnClearLog = document.getElementById('btnClearLog');
+        const logTableBody = document.getElementById('logTableBody');
+
+        let currentAngle = 0;
+        let activeSystem = 'std16';
+        let logData = [];
+
+        let originXRatio = 0.5;
+        let originYRatio = 0.72;
+
+        let isDraggingOrigin = false;
+        let isRotating = false;
+        let dragStartX = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            drawOverlay();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                video.src = fileURL;
+                placeholder.style.display = 'none';
+                video.load();
+                video.playbackRate = 0.5;
+                
+                // Attempt play; if mobile autoplay block catches it, update button to manual play mode
+                video.play().then(() => {
+                    btnPlayPause.textContent = 'Pause';
+                }).catch(() => {
+                    btnPlayPause.textContent = 'Play';
+                });
+            }
+        });
+
+        video.addEventListener('loadedmetadata', () => {
+            resizeCanvas();
+            timeScrubber.max = video.duration || 100;
+        });
+
+        video.addEventListener('timeupdate', () => {
+            if (!timeScrubber.matches(':active')) {
+                timeScrubber.value = video.currentTime;
+            }
+            formatTime(video.currentTime);
+            drawOverlay();
+        });
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 10);
+            const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms}`;
+            timeDisplay.textContent = formatted;
+            return formatted;
+        }
+
+        btnPlayPause.addEventListener('click', () => {
+            if (video.paused) {
+                video.muted = false; // Unmute on explicit tap
+                video.play().then(() => {
+                    btnPlayPause.textContent = 'Pause';
+                });
+            } else {
+                video.pause();
+                btnPlayPause.textContent = 'Play';
+            }
+        });
+
+        btnStepBack.addEventListener('click', () => {
+            video.pause();
+            btnPlayPause.textContent = 'Play';
+            video.currentTime = Math.max(0, video.currentTime - 1/30);
+        });
+
+        btnStepFwd.addEventListener('click', () => {
+            video.pause();
+            btnPlayPause.textContent = 'Play';
+            video.currentTime = Math.min(video.duration, video.currentTime + 1/30);
+        });
+
+        speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                speedButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                video.playbackRate = parseFloat(btn.dataset.speed);
+            });
+        });
+
+        timeScrubber.addEventListener('input', () => {
+            video.currentTime = timeScrubber.value;
+        });
+
+        angleSlider.addEventListener('input', (e) => {
+            currentAngle = parseFloat(e.target.value);
+            updateReadouts();
+            drawOverlay();
+        });
+
+        btnResetAngle.addEventListener('click', () => {
+            currentAngle = 0;
+            angleSlider.value = 0;
+            updateReadouts();
+            drawOverlay();
+        });
+
+        systemSelect.addEventListener('change', (e) => {
+            activeSystem = e.target.value;
+            updateReadouts();
+        });
+
+        canvas.addEventListener('pointerdown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const pivotX = canvas.width * originXRatio;
+            const pivotY = canvas.height * originYRatio;
+
+            const dist = Math.hypot(clickX - pivotX, clickY - pivotY);
+            if (dist < 30) {
+                isDraggingOrigin = true;
+            } else {
+                isRotating = true;
+                dragStartX = e.clientX;
+            }
+            canvas.setPointerCapture(e.pointerId);
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            if (isDraggingOrigin) {
+                originXRatio = Math.max(0.1, Math.min(0.9, (e.clientX - rect.left) / canvas.width));
+                originYRatio = Math.max(0.1, Math.min(0.9, (e.clientY - rect.top) / canvas.height));
+                drawOverlay();
+            } else if (isRotating) {
+                const deltaX = e.clientX - dragStartX;
+                dragStartX = e.clientX;
+                currentAngle = Math.max(-90, Math.min(90, currentAngle + deltaX * 0.5));
+                angleSlider.value = currentAngle;
+                updateReadouts();
+                drawOverlay();
+            }
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            isDraggingOrigin = false;
+            isRotating = false;
+            canvas.releasePointerCapture(e.pointerId);
+        });
+
+        function calculateGrade(absAngle, sign) {
+    const dir = sign > 0 ? 'R' : 'L';
+    if (absAngle < 5) return 'STRAIGHT';
+
+    if (activeSystem === 'std16') {
+        // 1 Fast -> 6 Tight
+        if (absAngle < 15) return `${dir}1`;
+        if (absAngle < 30) return `${dir}2`;
+        if (absAngle < 45) return `${dir}3`;
+        if (absAngle < 60) return `${dir}4`;
+        if (absAngle < 75) return `${dir}5`;
+        return `${dir}6`;
+    } else if (activeSystem === 'rev16') {
+        // 6 Fast -> 1 Tight
+        if (absAngle < 15) return `${dir}6`;
+        if (absAngle < 30) return `${dir}5`;
+        if (absAngle < 45) return `${dir}4`;
+        if (absAngle < 60) return `${dir}3`;
+        if (absAngle < 75) return `${dir}2`;
+        return `${dir}1`;
+    } else if (activeSystem === 'scale19') {
+        const num = Math.min(9, Math.ceil(absAngle / 10));
+        return `${dir}${num}`;
+    } else {
+        return `${dir} ${readoutClock.textContent}`;
+    }
+}
+
+        function updateReadouts() {
+            readoutAngle.textContent = `${currentAngle.toFixed(1)}°`;
+
+            let minutes = (currentAngle / 180) * 30;
+            let clockVal = 12 + (minutes / 60) * 12;
+            if (clockVal < 0) clockVal += 12;
+            let hrs = Math.floor(clockVal);
+            if (hrs === 0) hrs = 12;
+            let mins = Math.round((clockVal - Math.floor(clockVal)) * 60);
+            if (mins === 60) { hrs += 1; mins = 0; }
+            if (hrs > 12) hrs -= 12;
+
+            const clockStr = `${hrs}:${mins.toString().padStart(2, '0')}`;
+            readoutClock.textContent = clockStr;
+
+            const grade = calculateGrade(Math.abs(currentAngle), currentAngle);
+            readoutGrade.textContent = grade;
+        }
+
+        function drawOverlay() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w * originXRatio;
+            const cy = h * originYRatio;
+            const radius = Math.min(w, h) * 0.38;
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.strokeStyle = '#ffee00';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+            ctx.moveTo(cx - 14, cy); ctx.lineTo(cx + 14, cy);
+            ctx.moveTo(cx, cy - 14); ctx.lineTo(cx, cy + 14);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.beginPath();
+            ctx.moveTo(-w, 0); ctx.lineTo(w, 0);
+            ctx.stroke();
+
+            ctx.rotate((currentAngle * Math.PI) / 180);
+
+            ctx.strokeStyle = '#ffee00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -radius * 1.15);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffee00';
+            ctx.beginPath();
+            ctx.moveTo(0, -radius * 1.2);
+            ctx.lineTo(-8, -radius * 1.1);
+            ctx.lineTo(8, -radius * 1.1);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255, 238, 0, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, -Math.PI, 0);
+            ctx.stroke();
+
+            for (let deg = -90; deg <= 90; deg += 15) {
+                const rad = ((deg - 90) * Math.PI) / 180;
+                const isMajor = deg % 30 === 0;
+                const innerR = isMajor ? radius - 14 : radius - 7;
+
+                ctx.strokeStyle = isMajor ? '#ffee00' : 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = isMajor ? 2 : 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(rad) * innerR, Math.sin(rad) * innerR);
+                ctx.lineTo(Math.cos(rad) * radius, Math.sin(rad) * radius);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function addLogEntry() {
+            const entry = {
+                time: formatTime(video.currentTime),
+                angle: `${currentAngle.toFixed(1)}°`,
+                clock: readoutClock.textContent,
+                grade: readoutGrade.textContent
+            };
+            logData.push(entry);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${entry.time}</td>
+                <td>${entry.angle}</td>
+                <td>${entry.clock}</td>
+                <td style="color:var(--accent-green); font-weight:bold;">${entry.grade}</td>
+            `;
+            logTableBody.appendChild(tr);
+            logTableBody.parentElement.scrollTop = logTableBody.parentElement.scrollHeight;
+        }
+
+        btnLogNote.addEventListener('click', addLogEntry);
+
+        btnClearLog.addEventListener('click', () => {
+            logData = [];
+            logTableBody.innerHTML = '';
+        });
+
+        btnExportCSV.addEventListener('click', () => {
+            if (logData.length === 0) {
+                alert('No log entries to export.');
+                return;
+            }
+            let csv = 'Time,Angle,ClockFace,Grade\n';
+            logData.forEach(row => {
+                csv += `"${row.time}","${row.angle}","${row.clock}","${row.grade}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pace_notes_log_${Date.now()}.csv`;
+            a.click();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                video.currentTime = Math.max(0, video.currentTime - 1/30);
+            } else if (e.key === 'ArrowRight') {
+                video.currentTime = Math.min(video.duration, video.currentTime + 1/30);
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                btnPlayPause.click();
+            } else if (e.key.toLowerCase() === 'l') {
+                addLogEntry();
+            }
+        });
+
+        updateReadouts();
+    </script>
+</body>
+</html>
