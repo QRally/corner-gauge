@@ -226,10 +226,6 @@
             border-radius: 3px;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
         @media print {
             body { background: #fff !important; color: #000 !important; }
             header, .stage-box, .controls-bar, .no-print { display: none !important; }
@@ -246,7 +242,7 @@
             <h1 class="text-base md:text-xl font-bold uppercase tracking-wider flex items-center gap-2 text-[#ffcc00]">
                 🏁 Rally Recce Corner Gauge
             </h1>
-            <span class="text-xs text-[#8b9bb4] mono">v2.3 Fixed Upload</span>
+            <span class="text-xs text-[#8b9bb4] mono">v2.2 Mobile Optimized</span>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -256,7 +252,7 @@
                 
                 <div id="stage" class="stage-box">
                     <!-- HTML5 Video Element -->
-                    <video id="videoPlayer" class="w-full h-full object-contain pointer-events-none" playsinline webkit-playsinline preload="auto" muted crossorigin="anonymous"></video>
+                    <video id="videoPlayer" class="w-full h-full object-contain pointer-events-none" playsinline webkit-playsinline preload="auto" muted></video>
                     
                     <!-- Protractor & HUD Canvas -->
                     <canvas id="overlayCanvas" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-auto hidden"></canvas>
@@ -284,7 +280,7 @@
                 <!-- Control Buttons Bar -->
                 <div class="controls-bar flex flex-wrap items-center justify-between gap-2 p-2 bg-black/40 rounded-lg border border-white/5">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <label for="fileInput" class="btn text-xs py-1.5 px-2.5 cursor-pointer">📂 Open</label>
+                        <label for="fileInput" class="btn text-xs py-1.5 px-2.5">📂 Open</label>
                         <button id="btnUrlInput" class="btn text-xs py-1.5 px-2.5">🔗 URL</button>
                         <button id="btnPlayPause" class="btn btn-primary text-xs py-1.5 px-3">▶ Play</button>
                         <button id="btnStepBack" title="Step -1 frame" class="btn text-xs py-1.5 px-2">◀ -1f</button>
@@ -420,7 +416,6 @@
     </div>
 
     <script>
-        // DOM Elements
         const video = document.getElementById('videoPlayer');
         const canvas = document.getElementById('overlayCanvas');
         const ctx = canvas.getContext('2d');
@@ -466,4 +461,8 @@
         let logData = [];
         let selectedSpeed = 0.5;
         let currentVideoBlobUrl = null;
-        let animFrameI
+        let animFrameId = null;
+
+        // HUD Apex pivot point (proportional)
+        let originXRatio = 0.5;
+        let originYRatio = 0
