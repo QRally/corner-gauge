@@ -1,499 +1,468 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rally Recce Corner Gauge</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-:root {
---bg-dark: #0a0c10;
---panel-bg: #141820;
---panel-border: #232a38;
---accent-yellow: #ffcc00;
---accent-green: #00e676;
---accent-cyan: #00e5ff;
---accent-red: #ff3d00;
---text-main: #f0f4f8;
---text-muted: #8b9bb4;
---font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-}
-body {
-background-color: var(--bg-dark);
-color: var(--text-main);
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-user-select: none;
--webkit-user-select: none;
-}
-.mono {
-font-family: var(--font-mono);
-}
-::-webkit-scrollbar {
-width: 6px;
-height: 6px;
-}
-::-webkit-scrollbar-track {
-background: #0d1117;
-}
-::-webkit-scrollbar-thumb {
-background: #232a38;
-border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-background: var(--accent-yellow);
-}
-input[type="range"] {
-accent-color: var(--accent-yellow);
-}
-@media print {
-body {
-background: #fff !important;
-color: #000 !important;
-padding: 0;
-}
-header, .stage-card, .telemetry-card, .controls-row, .btn-group, .btn-del, .no-print {
-display: none !important;
-}
-.container-box {
-display: block !important;
-}
-.log-container {
-border: none !important;
-background: #fff !important;
-color: #000 !important;
-}
-.log-table-wrapper {
-max-height: none !important;
-border: none !important;
-}
-th {
-background: #eee !important;
-color: #000 !important;
-}
-td {
-color: #000 !important;
-border-bottom: 1px solid #ccc !important;
-}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rally Recce Corner Gauge</title>
+    <!-- Tailwind CDN for standard browsers -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0a0c10;
+            --panel-bg: #141820;
+            --panel-border: #232a38;
+            --accent-yellow: #ffcc00;
+            --accent-green: #00e676;
+            --accent-cyan: #00e5ff;
+            --accent-red: #ff3d00;
+            --text-main: #f0f4f8;
+            --text-muted: #8b9bb4;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* Fallback Core CSS to guarantee rendering even if CDN/Tailwind is blocked */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            line-height: 1.4;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        header {
+            width: 100%;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stage-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+            touch-action: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn {
+            background-color: #1f2633;
+            color: #fff;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+        }
+
+        .btn:hover, .btn:active {
+            background-color: #2b3547;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-yellow);
+            color: #000;
+            border-color: var(--accent-yellow);
+            font-weight: 800;
+        }
+
+        .btn-primary:hover, .btn-primary:active {
+            background-color: #e6b800;
+            color: #000;
+        }
+
+        .btn-success {
+            background-color: var(--accent-green);
+            color: #000;
+            border-color: var(--accent-green);
+            font-weight: 800;
+        }
+
+        .btn-danger {
+            background-color: rgba(255, 61, 0, 0.2);
+            color: var(--accent-red);
+            border-color: rgba(255, 61, 0, 0.4);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--accent-red);
+            color: #fff;
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent-yellow);
+            width: 100%;
+            height: 6px;
+            background: #232a38;
+            border-radius: 4px;
+        }
+
+        select, input[type="text"], input[type="url"] {
+            background-color: #080a0d;
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent-yellow);
+        }
+
+        .grid-mods {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .mod-btn {
+            background: #1a202c;
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .mod-btn.active {
+            background-color: var(--accent-yellow);
+            color: #000;
+            border-color: var(--accent-yellow);
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .log-table th {
+            background-color: #10141d;
+            color: var(--accent-yellow);
+            padding: 10px;
+            border-bottom: 1px solid var(--panel-border);
+            position: sticky;
+            top: 0;
+        }
+
+        .log-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #1a202c;
+            color: var(--text-main);
+        }
+
+        .log-table tr:hover {
+            background-color: #1a202c;
+            cursor: pointer;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232a38;
+            border-radius: 3px;
+        }
+
+        @media print {
+            body { background: #fff !important; color: #000 !important; }
+            header, .stage-box, .controls-bar, .no-print { display: none !important; }
+            .card { border: none !important; box-shadow: none !important; background: #fff !important; }
+            .log-table th { background: #ddd !important; color: #000 !important; }
+            .log-table td { color: #000 !important; border-bottom: 1px solid #ccc !important; }
+        }
+    </style>
 </head>
-<body class="min-h-screen p-3 md:p-5 flex flex-col items-center">
-<!-- Clean Header -->
-<header class="w-full max-w-6xl flex justify-between items-center mb-4 pb-2 border-b border-[#232a38]">
-<h1 class="text-lg md:text-xl font-bold text-[#ffcc00] uppercase tracking-wider flex items-center gap-2">
-🏁 Rally Recce Corner Gauge
-</h1>
-</header>
-<main class="container-box w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-4">
-<!-- Main Video & Player Stage -->
-<section class="lg:col-span-8 flex flex-col gap-3 bg-[#141820] border border-[#232a38] rounded-xl p-3 md:p-4 shadow-xl">
-<div id="stage" class="relative w-full aspect-video bg-black rounded-lg overflow-hidden border border-[#232a38] shadow-inner flex justify-center items-center touch-none">
-<!-- Video Player Element -->
-<video id="videoPlayer" class="w-full h-full object-contain pointer-events-none" playsinline webkit-playsinline preload="auto" muted></video>
-<!-- Protractor Canvas Overlay -->
-<canvas id="overlayCanvas" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-auto hidden"></canvas>
-<!-- Initial Video Target / Dropzone Overlay -->
-<div id="placeholder" class="absolute inset-0 flex flex-col justify-center items-center gap-3 bg-[#0a0c10]/95 text-[#8b9bb4] text-center p-6 cursor-pointer hover:bg-[#0a0c10]/85 transition-all pointer-events-auto z-10">
-<div class="text-5xl text-[#ffcc00]">📹</div>
-<div class="text-base font-semibold text-white">Tap or Drop Onboard Recce Video Here</div>
-<div class="text-xs text-[#8b9bb4]">Supports MP4, WebM, MOV files or online URLs</div>
-<div class="mt-2 text-xs bg-[#1f2633] text-[#ffcc00] border border-[#232a38] px-3 py-1.5 rounded font-bold hover:bg-[#2b3547]">
-📁 Choose Local File
-</div>
-</div>
-<!-- Hidden Native File Input -->
-<input type="file" id="fileInput" accept="video/*" class="hidden">
-</div>
-<!-- Controls Row -->
-<div class="flex flex-wrap items-center justify-between gap-2 bg-black/40 p-2.5 rounded-lg border border-white/5">
-<div class="flex items-center gap-2 flex-wrap">
-<button id="btnSelectFile" class="bg-[#1f2633] hover:bg-[#2b3547] text-white text-xs font-semibold px-3 py-1.5 rounded border border-[#232a38] transition flex items-center gap-1 cursor-pointer">
-📂 Open File
-</button>
-<button id="btnUrlInput" class="bg-[#1f2633] hover:bg-[#2b3547] text-white text-xs font-semibold px-3 py-1.5 rounded border border-[#232a38] transition flex items-center gap-1">
-🔗 Open URL
-</button>
-<button id="btnPlayPause" class="bg-[#ffcc00] hover:bg-[#e6b800] text-black text-xs font-bold px-3 py-1.5 rounded transition">
-▶ Play
-</button>
-<button id="btnStepBack" title="Previous Frame" class="bg-[#1f2633] hover:bg-[#2b3547] text-white text-xs font-semibold px-2.5 py-1.5 rounded border border-[#232a38]">
-◀ -1 Frame
-</button>
-<button id="btnStepFwd" title="Next Frame" class="bg-[#1f2633] hover:bg-[#2b3547] text-white text-xs font-semibold px-2.5 py-1.5 rounded border border-[#232a38]">
-+1 Frame ▶
-</button>
-</div>
-<div class="flex items-center gap-1.5">
-<span class="text-xs text-[#8b9bb4] font-medium">Speed:</span>
-<button class="btnSpeed text-xs bg-[#1f2633] hover:bg-[#2b3547] px-2 py-1 rounded border border-[#232a38]" data-speed="0.25">0.25x</button>
-<button class="btnSpeed text-xs bg-[#ffcc00] text-black font-bold px-2 py-1 rounded border border-[#ffcc00]" data-speed="0.5">0.5x</button>
-<button class="btnSpeed text-xs bg-[#1f2633] hover:bg-[#2b3547] px-2 py-1 rounded border border-[#232a38]" data-speed="1.0">1.0x</button>
-</div>
-</div>
-<!-- Timeline Scrubber -->
-<div class="flex items-center gap-3 w-full">
-<input type="range" id="timeScrubber" min="0" max="100" value="0" step="0.05" class="flex-grow h-2 bg-[#232a38] rounded-lg cursor-pointer">
-<span id="timeDisplay" class="mono text-sm font-bold bg-[#080a0d] text-[#00e5ff] px-2.5 py-1 rounded border border-[#232a38] min-w-[85px] text-center">
-00:00.0
-</span>
-</div>
-</section>
-<!-- Angle Adjustment & Readouts -->
-<section class="lg:col-span-4 flex flex-col gap-3.5 bg-[#141820] border border-[#232a38] rounded-xl p-4 shadow-xl">
-<!-- Angle Adjuster Control -->
-<div class="flex flex-col gap-1.5">
-<div class="flex justify-between items-center">
-<label for="angleSlider" class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">
-Angle Adjustment
-</label>
-<div class="flex items-center gap-2">
-<span id="sliderAngleBadge" class="mono text-xs text-[#ffcc00] font-bold">0.0°</span>
-<button id="btnResetAngle" class="text-xs bg-[#1f2633] hover:bg-[#ff3d00] hover:text-white text-[#8b9bb4] px-2 py-0.5 rounded border border-[#232a38] transition">
-Reset (0°)
-</button>
-</div>
-</div>
-<input type="range" id="angleSlider" min="-90" max="90" value="0" step="0.5" class="w-full h-2 bg-[#232a38] rounded-lg cursor-pointer">
-<p class="text-[11px] text-[#8b9bb4] leading-tight">
-💡 Drag target reticle on video to reposition horizon pivot. Drag horizontally across video or scroll wheel to adjust angle gauge.
-</p>
-</div>
-<!-- Pacenote Scale System Selector -->
-<div class="flex flex-col gap-1">
-<label for="systemSelect" class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">
-Pacenote Grading Scale
-</label>
-<select id="systemSelect" class="bg-[#080a0d] border border-[#232a38] text-white text-xs font-semibold p-2 rounded focus:outline-none focus:border-[#ffcc00]">
-<option value="std16">1–6 Scale (1 Fast / 6 Tight)</option>
-<option value="rev16">1–6 Scale (6 Fast / 1 Tight)</option>
-<option value="scale19">1–9 Fine Scale</option>
-</select>
-</div>
-<!-- Readouts -->
-<div class="grid grid-cols-2 gap-3 bg-[#080a0d] p-3 rounded-lg border border-[#232a38] text-center">
-<div class="flex flex-col">
-<span class="text-[10px] uppercase font-semibold text-[#8b9bb4]">Tilt Angle</span>
-<span id="readoutAngle" class="mono text-lg font-extrabold text-[#ffcc00]">0.0°</span>
-</div>
-<div class="flex flex-col">
-<span class="text-[10px] uppercase font-semibold text-[#8b9bb4]">Grade</span>
-<span id="readoutGrade" class="mono text-lg font-extrabold text-[#00e676]">STRAIGHT</span>
-</div>
-</div>
-<!-- Corner Modifiers -->
-<div class="flex flex-col gap-1.5">
-<span class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">Modifiers</span>
-<div class="grid grid-cols-2 gap-1.5">
-<button class="mod-btn text-xs bg-[#1a202c] border border-[#232a38] text-[#8b9bb4] py-1.5 px-2 rounded font-medium transition" data-mod="Tightens">Tightens</button>
-<button class="mod-btn text-xs bg-[#1a202c] border border-[#232a38] text-[#8b9bb4] py-1.5 px-2 rounded font-medium transition" data-mod="Opens">Opens</button>
-<button class="mod-btn text-xs bg-[#1a202c] border border-[#232a38] text-[#8b9bb4] py-1.5 px-2 rounded font-medium transition" data-mod="Crest">Crest</button>
-<button class="mod-btn text-xs bg-[#1a202c] border border-[#232a38] text-[#8b9bb4] py-1.5 px-2 rounded font-medium transition" data-mod="Don't Cut">Don't Cut</button>
-<button class="mod-btn text-xs bg-[#1a202c] border border-[#232a38] text-[#8b9bb4] py-1.5 px-2 rounded font-medium transition" data-mod="Caution">Caution</button>
-<button class="mod-btn text-xs bg-[#1a202c] border border-[#232a38] text-[#8b9bb4] py-1.5 px-2 rounded font-medium transition" data-mod="Long">Long</button>
-</div>
-</div>
-<!-- Comment Input & Log Button -->
-<div class="flex flex-col gap-2 mt-auto">
-<input type="text" id="customComment" placeholder="Extra note (e.g. into 50 over bridge)..." class="w-full text-xs p-2 bg-[#080a0d] border border-[#232a38] text-white rounded focus:outline-none focus:border-[#ffcc00]">
-<button id="btnLogNote" class="w-full bg-[#00e676] hover:bg-[#00c853] text-black font-extrabold text-sm py-2.5 rounded transition shadow-md flex items-center justify-center gap-1.5">
-➕ Log Pacenote
-</button>
-</div>
-</section>
-<!-- Pacenote Log Table -->
-<section class="lg:col-span-12 log-container bg-[#141820] border border-[#232a38] rounded-xl p-4 flex flex-col gap-3 shadow-xl">
-<div class="flex justify-between items-center flex-wrap gap-2">
-<h2 class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">
-Pacenote Log Sheet
-</h2>
-<div class="flex items-center gap-2 no-print">
-<button id="btnPrintSheet" class="text-xs bg-[#1f2633] hover:bg-[#2b3547] text-white font-semibold px-3 py-1.5 rounded border border-[#232a38] transition flex items-center gap-1">
-🖨️ Print Sheet
-</button>
-<button id="btnExportCSV" class="text-xs bg-[#1f2633] hover:bg-[#2b3547] text-white font-semibold px-3 py-1.5 rounded border border-[#232a38] transition flex items-center gap-1">
-📊 Export CSV
-</button>
-<button id="btnClearLog" class="text-xs bg-[#1f2633] hover:bg-[#ff3d00] text-[#ff3d00] hover:text-white font-semibold px-3 py-1.5 rounded border border-[#232a38] transition">
-🗑️ Clear Log
-</button>
-</div>
-</div>
-<div class="log-table-wrapper max-h-60 overflow-y-auto rounded-lg border border-[#232a38] bg-[#080a0d]">
-<table class="w-full text-left mono text-xs">
-<thead class="sticky top-0 bg-[#10141d] text-[#ffcc00] border-b border-[#232a38]">
-<tr>
-<th class="p-2.5 w-24">Time</th>
-<th class="p-2.5 w-20">Angle</th>
-<th class="p-2.5 w-28">Grade</th>
-<th class="p-2.5">Modifiers & Description</th>
-<th class="p-2.5 w-12 text-center no-print"></th>
-</tr>
-</thead>
-<tbody id="logTableBody">
-<!-- Dynamic logged pacenotes -->
-</tbody>
-</table>
-</div>
-</section>
-</main>
-<!-- Open URL Modal -->
-<div id="urlModal" class="fixed inset-0 bg-black/80 flex justify-center items-center p-4 z-50 hidden">
-<div class="bg-[#141820] border border-[#232a38] rounded-xl p-5 w-full max-w-md flex flex-col gap-4 shadow-2xl">
-<h3 class="text-base font-bold text-[#ffcc00] flex items-center gap-2">
-🔗 Open Online Video URL
-</h3>
-<p class="text-xs text-[#8b9bb4]">
-Paste a direct link to a public MP4 or WebM video file:
-</p>
-<input type="url" id="urlInput" placeholder="https://example.com/onboard_recce.mp4" class="w-full text-xs p-2.5 bg-[#080a0d] border border-[#232a38] text-white rounded focus:outline-none focus:border-[#ffcc00]">
-<div class="flex flex-col gap-2 pt-1 border-t border-[#232a38]">
-<button id="btnLoadSample" class="w-full bg-[#1f2633] hover:bg-[#2b3547] text-[#00e5ff] text-xs font-bold py-2 rounded border border-[#00e5ff]/30 transition">
-⚡ Load Sample Rally Recce Clip
-</button>
-</div>
-<div class="flex justify-end gap-2 mt-2">
-<button id="btnCancelUrl" class="bg-[#1f2633] hover:bg-[#2b3547] text-white text-xs font-semibold px-4 py-2 rounded transition">
-Cancel
-</button>
-<button id="btnConfirmUrl" class="bg-[#ffcc00] hover:bg-[#e6b800] text-black text-xs font-bold px-4 py-2 rounded transition">
-Load Video
-</button>
-</div>
-</div>
-</div>
-<!-- Toast Notification Banner -->
-<div id="toast" class="fixed bottom-5 right-5 bg-[#ffcc00] text-black px-4 py-2.5 rounded-lg font-bold shadow-2xl translate-y-20 opacity-0 transition-all duration-300 z-50 pointer-events-none">
-Log entry saved!
-</div>
-<script>
-const video = document.getElementById('videoPlayer');
-const canvas = document.getElementById('overlayCanvas');
-const ctx = canvas.getContext('2d');
-const stage = document.getElementById('stage');
-const placeholder = document.getElementById('placeholder');
-const fileInput = document.getElementById('fileInput');
-const btnSelectFile = document.getElementById('btnSelectFile');
-const btnUrlInput = document.getElementById('btnUrlInput');
-const urlModal = document.getElementById('urlModal');
-const urlInput = document.getElementById('urlInput');
-const btnConfirmUrl = document.getElementById('btnConfirmUrl');
-const btnCancelUrl = document.getElementById('btnCancelUrl');
-const btnLoadSample = document.getElementById('btnLoadSample');
-const btnPlayPause = document.getElementById('btnPlayPause');
-const btnStepBack = document.getElementById('btnStepBack');
-const btnStepFwd = document.getElementById('btnStepFwd');
-const speedButtons = document.querySelectorAll('.btnSpeed');
-const timeScrubber = document.getElementById('timeScrubber');
-const timeDisplay = document.getElementById('timeDisplay');
-const angleSlider = document.getElementById('angleSlider');
-const sliderAngleBadge = document.getElementById('sliderAngleBadge');
-const btnResetAngle = document.getElementById('btnResetAngle');
-const systemSelect = document.getElementById('systemSelect');
-const modButtons = document.querySelectorAll('.mod-btn');
-const customComment = document.getElementById('customComment');
-const readoutAngle = document.getElementById('readoutAngle');
-const readoutGrade = document.getElementById('readoutGrade');
-const btnLogNote = document.getElementById('btnLogNote');
-const btnExportCSV = document.getElementById('btnExportCSV');
-const btnPrintSheet = document.getElementById('btnPrintSheet');
-const btnClearLog = document.getElementById('btnClearLog');
-const logTableBody = document.getElementById('logTableBody');
-const toast = document.getElementById('toast');
-// State variables
-let currentAngle = 0;
-let activeSystem = 'std16';
-let activeModifiers = [];
-let logData = [];
-let selectedSpeed = 0.5;
-let currentVideoBlobUrl = null;
-let animFrameId = null;
-// Target reticle apex pivot ratios
-let originXRatio = 0.5;
-let originYRatio = 0.72;
-let isDraggingOrigin = false;
-let isRotating = false;
-let dragStartX = 0;
-function resizeCanvas() {
-if (!stage) return;
-canvas.width = stage.clientWidth;
-canvas.height = stage.clientHeight;
-drawOverlay();
-}
-window.addEventListener('resize', resizeCanvas);
-// File Selection Handlers
-function triggerFilePicker() {
-fileInput.value = '';
-fileInput.click();
-}
-placeholder.addEventListener('click', triggerFilePicker);
-btnSelectFile.addEventListener('click', triggerFilePicker);
-fileInput.addEventListener('change', (e) => {
-const file = e.target.files[0];
-if (file) {
-if (currentVideoBlobUrl) {
-URL.revokeObjectURL(currentVideoBlobUrl);
-}
-currentVideoBlobUrl = URL.createObjectURL(file);
-loadVideoSource(currentVideoBlobUrl);
-}
-});
-// URL Modal Dialog Handlers
-btnUrlInput.addEventListener('click', () => {
-urlModal.classList.remove('hidden');
-urlInput.focus();
-});
-btnCancelUrl.addEventListener('click', () => {
-urlModal.classList.add('hidden');
-});
-btnConfirmUrl.addEventListener('click', () => {
-const val = urlInput.value.trim();
-if (val) {
-loadVideoSource(val);
-urlModal.classList.add('hidden');
-urlInput.value = '';
-}
-});
-btnLoadSample.addEventListener('click', () => {
-// Public test MP4 video stream
-const sampleUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
-loadVideoSource(sampleUrl);
-urlModal.classList.add('hidden');
-});
-function loadVideoSource(src) {
-showToast('Loading video...');
-video.pause();
-btnPlayPause.textContent = '▶ Play';
-video.src = src;
-placeholder.style.display = 'none';
-canvas.classList.remove('hidden');
-video.load();
-}
-video.addEventListener('loadedmetadata', () => {
-resizeCanvas();
-if (video.duration && !isNaN(video.duration)) {
-timeScrubber.max = video.duration;
-}
-video.playbackRate = selectedSpeed;
-// Force first frame render on mobile/safari
-video.currentTime = 0.01;
-drawOverlay();
-});
-video.addEventListener('canplay', () => {
-formatTime(video.currentTime);
-drawOverlay();
-});
-video.addEventListener('error', () => {
-showToast('⚠️ Video error: Format or codec unsupported.');
-placeholder.style.display = 'flex';
-canvas.classList.add('hidden');
-});
-// Drag and drop video files onto stage
-stage.addEventListener('dragover', (e) => {
-e.preventDefault();
-});
-stage.addEventListener('drop', (e) => {
-e.preventDefault();
-if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-const file = e.dataTransfer.files[0];
-if (currentVideoBlobUrl) {
-URL.revokeObjectURL(currentVideoBlobUrl);
-}
-currentVideoBlobUrl = URL.createObjectURL(file);
-loadVideoSource(currentVideoBlobUrl);
-}
-});
-function updateVideoLoop() {
-if (!video.paused && !video.ended) {
-if (!timeScrubber.matches(':active')) {
-timeScrubber.value = video.currentTime;
-}
-formatTime(video.currentTime);
-drawOverlay();
-animFrameId = requestAnimationFrame(updateVideoLoop);
-}
-}
-video.addEventListener('play', () => {
-btnPlayPause.textContent = '⏸ Pause';
-animFrameId = requestAnimationFrame(updateVideoLoop);
-});
-video.addEventListener('pause', () => {
-btnPlayPause.textContent = '▶ Play';
-if (animFrameId) cancelAnimationFrame(animFrameId);
-formatTime(video.currentTime);
-drawOverlay();
-});
-video.addEventListener('timeupdate', () => {
-if (video.paused) {
-if (!timeScrubber.matches(':active')) {
-timeScrubber.value = video.currentTime;
-}
-formatTime(video.currentTime);
-drawOverlay();
-}
-});
-function formatTime(seconds) {
-if (isNaN(seconds)) seconds = 0;
-const mins = Math.floor(seconds / 60);
-const secs = Math.floor(seconds % 60);
-const ms = Math.floor((seconds % 1) * 10);
-const formatted = ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms};
-timeDisplay.textContent = formatted;
-return formatted;
-}
-function togglePlay() {
-if (!video.src) {
-triggerFilePicker();
-return;
-}
-if (video.paused) {
-video.playbackRate = selectedSpeed;
-video.play().catch(() => {
-showToast('Tap play to start video');
-});
-} else {
-video.pause();
-}
-}
-btnPlayPause.addEventListener('click', togglePlay);
-btnStepBack.addEventListener('click', () => {
-if (!video.src) return;
-video.pause();
-video.currentTime = Math.max(0, video.currentTime - (1 / 30));
-});
-btnStepFwd.addEventListener('click', () => {
-if (!video.src) return;
-video.pause();
-video.currentTime = Math.min(video.duration || 100, video.currentTime + (1 / 30));
-});
-speedButtons.forEach(btn => {
-btn.addEventListener('click', () => {
-speedButtons.forEach(b => {
-b.classList.remove('bg-[#ffcc00]', 'text-black', 'font-bold');
-b.classList.add('bg-[#1f2633]', 'text-white');
-});
-btn.classList.remove('bg-[#1f2633]', 'text-white');
-btn.classList.add('bg-[#ffcc00]', 'text-black', 'font-bold');
-selectedSpeed = parseFloat(btn.dataset.speed);
-video.playbackRate = selectedSpeed;
-});
-});
-timeScrubber.addEventListener('input', () => {
-if (!video.src) return;
-video.currentTime = timeScrubber.value;
-formatTime(video.currentTime);
-drawOverlay();
-});
-function setAngle(angleVal) {
-currentAngle = Math.max(-90, Math.min(90, parseFloat(angleVal)));
-angleSlider.value = currentAngle;
-sliderAngleBadge.textContent = ${currentAngle > 0 ? '+' : ''}${currentAngle.toFixed(1)}°;
-updateReadouts();
-drawOverlay();
-}
-angleSlider.addEventListener('input', (e) => {
-setAngle(e.target.value);
-});
-btnResetAngle.addEventListener('click', () => {
-setAngle(0);
-});
-systemSel
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1 class="text-base md:text-xl font-bold uppercase tracking-wider flex items-center gap-2 text-[#ffcc00]">
+                🏁 Rally Recce Corner Gauge
+            </h1>
+            <span class="text-xs text-[#8b9bb4] mono">v2.2 Mobile Optimized</span>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <!-- VIDEO & HUD STAGE CARD -->
+            <section class="lg:col-span-8 card">
+                
+                <div id="stage" class="stage-box">
+                    <!-- HTML5 Video Element -->
+                    <video id="videoPlayer" class="w-full h-full object-contain pointer-events-none" playsinline webkit-playsinline preload="auto" muted></video>
+                    
+                    <!-- Protractor & HUD Canvas -->
+                    <canvas id="overlayCanvas" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-auto hidden"></canvas>
+                    
+                    <!-- Compact Initial Overlay Placeholder to prevent overflow -->
+                    <div id="placeholder" class="absolute inset-0 flex flex-col justify-center items-center p-2 sm:p-4 bg-[#0a0c10]/95 text-center gap-1.5 sm:gap-2 z-10 overflow-hidden">
+                        <div class="text-2xl sm:text-3xl text-[#ffcc00]">📹</div>
+                        <div class="text-xs sm:text-sm font-bold text-white">Tap or Choose Onboard Recce Video</div>
+                        <div class="text-[10px] sm:text-xs text-[#8b9bb4] max-w-xs leading-tight">Supports MP4, WebM, or MOV onboard video</div>
+                        
+                        <div class="flex flex-wrap justify-center gap-2 mt-1">
+                            <label for="fileInput" class="btn btn-primary cursor-pointer text-[11px] sm:text-xs py-1 px-2.5">
+                                📁 Choose Local Video
+                            </label>
+                            <button id="btnOpenUrlModal" class="btn text-[11px] sm:text-xs py-1 px-2.5 bg-[#1f2633] text-[#00e5ff] border-[#00e5ff]/30 hover:bg-[#2b3547]">
+                                🔗 Open Video URL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="fileInput" accept="video/*" class="hidden">
+                </div>
+
+                <!-- Control Buttons Bar -->
+                <div class="controls-bar flex flex-wrap items-center justify-between gap-2 p-2 bg-black/40 rounded-lg border border-white/5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <label for="fileInput" class="btn text-xs py-1.5 px-2.5">📂 Open</label>
+                        <button id="btnUrlInput" class="btn text-xs py-1.5 px-2.5">🔗 URL</button>
+                        <button id="btnPlayPause" class="btn btn-primary text-xs py-1.5 px-3">▶ Play</button>
+                        <button id="btnStepBack" title="Step -1 frame" class="btn text-xs py-1.5 px-2">◀ -1f</button>
+                        <button id="btnStepFwd" title="Step +1 frame" class="btn text-xs py-1.5 px-2">+1f ▶</button>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <span class="text-[11px] text-[#8b9bb4]">Speed:</span>
+                        <button class="btnSpeed btn text-[11px] px-2 py-1" data-speed="0.25">0.25x</button>
+                        <button class="btnSpeed btn btn-primary text-[11px] px-2 py-1" data-speed="0.5">0.5x</button>
+                        <button class="btnSpeed btn text-[11px] px-2 py-1" data-speed="1.0">1.0x</button>
+                    </div>
+                </div>
+
+                <!-- Timeline Scrubber -->
+                <div class="flex items-center gap-2 w-full">
+                    <input type="range" id="timeScrubber" min="0" max="100" value="0" step="0.05" class="flex-grow">
+                    <span id="timeDisplay" class="mono text-xs font-bold bg-[#080a0d] text-[#00e5ff] px-2 py-1 rounded border border-[#232a38] min-w-[70px] text-center">
+                        00:00.0
+                    </span>
+                </div>
+            </section>
+
+            <!-- ANGLE ADJUSTER & READOUTS PANEL -->
+            <section class="lg:col-span-4 card">
+                
+                <!-- Angle Slider -->
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">Angle Adjustment</label>
+                        <div class="flex items-center gap-2">
+                            <span id="sliderAngleBadge" class="mono text-xs text-[#ffcc00] font-bold">0.0°</span>
+                            <button id="btnResetAngle" class="btn text-[10px] py-0.5 px-1.5">Reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="angleSlider" min="-90" max="90" value="0" step="0.5">
+                    <p class="text-[10px] text-[#8b9bb4]">
+                        💡 Touch & drag crosshair target on video to set pivot apex point. Drag slider or scroll to set corner curve.
+                    </p>
+                </div>
+
+                <!-- Grading Scale Selector -->
+                <div class="flex flex-col gap-1">
+                    <label for="systemSelect" class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">Pacenote System Scale</label>
+                    <select id="systemSelect">
+                        <option value="rev16" selected>1–6 Scale (6 Fast / 1 Tight)</option>
+                        <option value="std16">1–6 Scale (1 Fast / 6 Tight)</option>
+                        <option value="scale19">1–9 Fine Scale</option>
+                    </select>
+                </div>
+
+                <!-- Readout Badges -->
+                <div class="grid grid-cols-2 gap-2 bg-[#080a0d] p-2.5 rounded-lg border border-[#232a38] text-center">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase font-semibold text-[#8b9bb4]">Tilt Angle</span>
+                        <span id="readoutAngle" class="mono text-base font-extrabold text-[#ffcc00]">0.0°</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase font-semibold text-[#8b9bb4]">Corner Grade</span>
+                        <span id="readoutGrade" class="mono text-base font-extrabold text-[#00e676]">STRAIGHT</span>
+                    </div>
+                </div>
+
+                <!-- Modifiers -->
+                <div class="flex flex-col gap-1.5">
+                    <span class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">Modifiers</span>
+                    <div class="grid-mods">
+                        <button class="mod-btn" data-mod="Tightens">Tightens</button>
+                        <button class="mod-btn" data-mod="Opens">Opens</button>
+                        <button class="mod-btn" data-mod="Crest">Crest</button>
+                        <button class="mod-btn" data-mod="Don't Cut">Don't Cut</button>
+                        <button class="mod-btn" data-mod="Caution">Caution</button>
+                        <button class="mod-btn" data-mod="Long">Long</button>
+                    </div>
+                </div>
+
+                <!-- Log Note Form -->
+                <div class="flex flex-col gap-2 mt-auto">
+                    <input type="text" id="customComment" placeholder="Add extra detail (e.g. into 50 over bridge)...">
+                    <button id="btnLogNote" class="btn btn-success w-full py-2.5 text-sm">
+                        ➕ Log Pacenote
+                    </button>
+                </div>
+            </section>
+
+            <!-- PACENOTE LOG SHEET -->
+            <section class="lg:col-span-12 card">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <h2 class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">Pacenote Log Sheet</h2>
+                    <div class="flex items-center gap-1.5 no-print">
+                        <button id="btnPrintSheet" class="btn text-xs py-1 px-2.5">🖨️ Print</button>
+                        <button id="btnExportCSV" class="btn text-xs py-1 px-2.5">📊 CSV</button>
+                        <button id="btnClearLog" class="btn btn-danger text-xs py-1 px-2.5">🗑️ Clear</button>
+                    </div>
+                </div>
+
+                <div class="max-h-56 overflow-y-auto rounded-lg border border-[#232a38] bg-[#080a0d]">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Time</th>
+                                <th style="width: 18%;">Angle</th>
+                                <th style="width: 22%;">Grade</th>
+                                <th>Modifiers & Notes</th>
+                                <th style="width: 10%; text-align: center;" class="no-print"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <!-- Dynamic pacenote entries inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- URL MODAL -->
+    <div id="urlModal" class="fixed inset-0 bg-black/80 flex justify-center items-center p-4 z-50 hidden">
+        <div class="bg-[#141820] border border-[#232a38] rounded-xl p-5 w-full max-w-md flex flex-col gap-4 shadow-2xl">
+            <h3 class="text-base font-bold text-[#ffcc00]">🔗 Open Direct Video URL</h3>
+            <p class="text-xs text-[#8b9bb4]">Paste direct link to online video file (.mp4, .webm):</p>
+            <input type="url" id="urlInput" placeholder="https://example.com/recce.mp4">
+            <div class="flex justify-end gap-2 mt-2">
+                <button id="btnCancelUrl" class="btn text-xs">Cancel</button>
+                <button id="btnConfirmUrl" class="btn btn-primary text-xs">Load Video</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST BANNER -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-[#ffcc00] text-black font-extrabold px-4 py-2 rounded-lg shadow-2xl transition-all duration-300 translate-y-20 opacity-0 z-50 pointer-events-none text-xs">
+        Notification
+    </div>
+
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const canvas = document.getElementById('overlayCanvas');
+        const ctx = canvas.getContext('2d');
+        const stage = document.getElementById('stage');
+        const placeholder = document.getElementById('placeholder');
+        const fileInput = document.getElementById('fileInput');
+        
+        const btnUrlInput = document.getElementById('btnUrlInput');
+        const btnOpenUrlModal = document.getElementById('btnOpenUrlModal');
+        const urlModal = document.getElementById('urlModal');
+        const urlInput = document.getElementById('urlInput');
+        const btnConfirmUrl = document.getElementById('btnConfirmUrl');
+        const btnCancelUrl = document.getElementById('btnCancelUrl');
+
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const btnStepBack = document.getElementById('btnStepBack');
+        const btnStepFwd = document.getElementById('btnStepFwd');
+        const speedButtons = document.querySelectorAll('.btnSpeed');
+        const timeScrubber = document.getElementById('timeScrubber');
+        const timeDisplay = document.getElementById('timeDisplay');
+        
+        const angleSlider = document.getElementById('angleSlider');
+        const sliderAngleBadge = document.getElementById('sliderAngleBadge');
+        const btnResetAngle = document.getElementById('btnResetAngle');
+        const systemSelect = document.getElementById('systemSelect');
+        const modButtons = document.querySelectorAll('.mod-btn');
+        const customComment = document.getElementById('customComment');
+        
+        const readoutAngle = document.getElementById('readoutAngle');
+        const readoutGrade = document.getElementById('readoutGrade');
+
+        const btnLogNote = document.getElementById('btnLogNote');
+        const btnExportCSV = document.getElementById('btnExportCSV');
+        const btnPrintSheet = document.getElementById('btnPrintSheet');
+        const btnClearLog = document.getElementById('btnClearLog');
+        const logTableBody = document.getElementById('logTableBody');
+        const toast = document.getElementById('toast');
+
+        // Application State
+        let currentAngle = 0;
+        let activeSystem = systemSelect.value || 'rev16';
+        let activeModifiers = [];
+        let logData = [];
+        let selectedSpeed = 0.5;
+        let currentVideoBlobUrl = null;
+        let animFrameId = null;
+
+        // HUD Apex pivot point (proportional)
+        let originXRatio = 0.5;
+        let originYRatio = 0
