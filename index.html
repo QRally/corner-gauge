@@ -127,6 +127,11 @@
             font-weight: 800;
         }
 
+        .btn-success:hover, .btn-success:active {
+            background-color: #00d669;
+            color: #000;
+        }
+
         .btn-danger {
             background-color: rgba(255, 61, 0, 0.2);
             color: var(--accent-red);
@@ -809,6 +814,10 @@
             renderLogTable();
             showToast(`Logged: ${grade}`);
             customComment.value = '';
+            
+            // Clear all modifier buttons
+            modButtons.forEach(btn => btn.classList.remove('active'));
+            activeModifiers = [];
         }
 
         function renderLogTable() {
