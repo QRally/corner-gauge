@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rally Recce Corner Gauge & Logger v1.4.2</title>
+    <title>Rally Recce Corner Gauge & Logger v1.4.3</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -63,6 +63,18 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            pointer-events: none; /* Prevent browser context popups / default play buttons */
+        }
+
+        /* Hide all native media controls across WebKit/Blink/Gecko browsers */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+        video::-webkit-media-controls-panel {
+            display: none !important;
         }
 
         canvas {
@@ -267,10 +279,10 @@
 <body>
 
     <div class="container">
-        <h1>Rally Recce Corner Gauge & Logger v1.4.2</h1>
+        <h1>Rally Recce Corner Gauge & Logger v1.4.3</h1>
 
         <div class="stage-area" id="stage">
-            <video id="videoPlayer" playsinline webkit-playsinline preload="metadata" controls></video>
+            <video id="videoPlayer" playsinline webkit-playsinline preload="metadata" muted></video>
             <canvas id="overlayCanvas"></canvas>
             <div class="placeholder-text" id="placeholder">Select a video file below to start recce measurement</div>
         </div>
@@ -425,7 +437,6 @@
 
         window.addEventListener('resize', resizeCanvas);
 
-        // Standard direct Object URL fallback with crossOrigin safety
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -461,6 +472,7 @@
 
         btnPlayPause.addEventListener('click', () => {
             if (video.paused) {
+                video.muted = false; // Unmute upon explicit button press
                 video.playbackRate = selectedSpeed;
                 video.play().then(() => {
                     btnPlayPause.textContent = 'Pause';
@@ -628,7 +640,7 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // Steering Wheel Graphic
+            // Steering Wheel Graphic Overlay
             const wheelX = w - 60;
             const wheelY = h - 60;
             const wheelRadius = 35;
