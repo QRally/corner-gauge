@@ -464,4 +464,509 @@
         const btnLogNote = document.getElementById('btnLogNote');
         const btnExportCSV = document.getElementById('btnExportCSV');
         const btnPrintSheet = document.getElementById('btnPrintSheet');
-        const btnClearLog = documen
+        const btnClearLog = document.getElementById('btnClearLog');
+        const logTableBody = document.getElementById('logTableBody');
+        const toast = document.getElementById('toast');
+
+        // Application State
+        let currentAngle = 0;
+        let activeSystem = systemSelect.value || 'rev16';
+        let activeModifiers = [];
+        let logData = [];
+        let selectedSpeed = 0.5;
+        let currentVideoBlobUrl = null;
+        let animFrameId = null;
+
+        // HUD Apex pivot point
+        let originXRatio = 0.5;
+        let originYRatio = 0.72;
+
+        let isDraggingOrigin = false;
+        let isRotating = false;
+        let dragStartX = 0;
+
+        function resizeCanvas() {
+            if (!stage) return;
+            canvas.width = stage.clientWidth;
+            canvas.height = stage.clientHeight;
+            drawOverlay();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function triggerFileInput() {
+            fileInput.click();
+        }
+
+        btnChooseLocal.addEventListener('click', triggerFileInput);
+        btnOpen.addEventListener('click', triggerFileInput);
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (currentVideoBlobUrl) {
+                    URL.revokeObjectURL(currentVideoBlobUrl);
+                }
+                currentVideoBlobUrl = URL.createObjectURL(file);
+                loadVideoSource(currentVideoBlobUrl);
+            }
+        });
+
+        if (btnOpenUrlModal) {
+            btnOpenUrlModal.addEventListener('click', () => {
+                urlModal.classList.remove('hidden');
+                urlInput.focus();
+            });
+        }
+
+        btnUrlInput.addEventListener('click', () => {
+            urlModal.classList.remove('hidden');
+            urlInput.focus();
+        });
+
+        btnCancelUrl.addEventListener('click', () => {
+            urlModal.classList.add('hidden');
+        });
+
+        btnConfirmUrl.addEventListener('click', () => {
+            const val = urlInput.value.trim();
+            if (val) {
+                loadVideoSource(val);
+                urlModal.classList.add('hidden');
+                urlInput.value = '';
+            }
+        });
+
+        function loadVideoSource(src) {
+            showToast('Loading video...');
+            video.pause();
+            btnPlayPause.textContent = '▶ Play';
+            
+            video.src = src;
+            placeholder.style.display = 'none';
+            canvas.classList.remove('hidden');
+            
+            video.load();
+        }
+
+        // Comprehensive event listening for mobile video support on GitHub Pages
+        ['loadedmetadata', 'loadeddata', 'canplay'].forEach(evt => {
+            video.addEventListener(evt, () => {
+                resizeCanvas();
+                if (video.duration && !isNaN(video.duration)) {
+                    timeScrubber.max = video.duration;
+                }
+                video.playbackRate = selectedSpeed;
+                drawOverlay();
+            });
+        });
+
+        video.addEventListener('error', () => {
+            showToast('⚠️️ Video format not supported by browser');
+        });
+
+        function renderLoop() {
+            if (!video.paused && !video.ended) {
+                if (!timeScrubber.matches(':active')) {
+                    timeScrubber.value = video.currentTime;
+                }
+                formatTime(video.currentTime);
+                drawOverlay();
+                animFrameId = requestAnimationFrame(renderLoop);
+            }
+        }
+
+        video.addEventListener('play', () => {
+            btnPlayPause.textContent = '⏸ Pause';
+            animFrameId = requestAnimationFrame(renderLoop);
+        });
+
+        video.addEventListener('pause', () => {
+            btnPlayPause.textContent = '▶ Play';
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            formatTime(video.currentTime);
+            drawOverlay();
+        });
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) seconds = 0;
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 10);
+            const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms}`;
+            timeDisplay.textContent = formatted;
+            return formatted;
+        }
+
+        function togglePlay() {
+            if (!video.src) {
+                triggerFileInput();
+                return;
+            }
+            if (video.paused) {
+                video.playbackRate = selectedSpeed;
+                video.play().catch(() => showToast('Tap play button'));
+            } else {
+                video.pause();
+            }
+        }
+
+        btnPlayPause.addEventListener('click', togglePlay);
+
+        btnStepBack.addEventListener('click', () => {
+            if (!video.src) return;
+            video.pause();
+            video.currentTime = Math.max(0, video.currentTime - (1 / 30));
+        });
+
+        btnStepFwd.addEventListener('click', () => {
+            if (!video.src) return;
+            video.pause();
+            video.currentTime = Math.min(video.duration || 100, video.currentTime + (1 / 30));
+        });
+
+        speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                speedButtons.forEach(b => b.classList.remove('btn-primary'));
+                btn.classList.add('btn-primary');
+                selectedSpeed = parseFloat(btn.dataset.speed);
+                video.playbackRate = selectedSpeed;
+            });
+        });
+
+        timeScrubber.addEventListener('input', () => {
+            if (!video.src) return;
+            video.currentTime = timeScrubber.value;
+            formatTime(video.currentTime);
+            drawOverlay();
+        });
+
+        function setAngle(angleVal) {
+            currentAngle = Math.max(-90, Math.min(90, parseFloat(angleVal)));
+            angleSlider.value = currentAngle;
+            sliderAngleBadge.textContent = `${currentAngle > 0 ? '+' : ''}${currentAngle.toFixed(1)}°`;
+            updateReadouts();
+            drawOverlay();
+        }
+
+        angleSlider.addEventListener('input', (e) => setAngle(e.target.value));
+        btnResetAngle.addEventListener('click', () => setAngle(0));
+        systemSelect.addEventListener('change', (e) => {
+            activeSystem = e.target.value;
+            updateReadouts();
+            drawOverlay();
+        });
+
+        modButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mod = btn.dataset.mod;
+                if (activeModifiers.includes(mod)) {
+                    activeModifiers = activeModifiers.filter(m => m !== mod);
+                    btn.classList.remove('active');
+                } else {
+                    activeModifiers.push(mod);
+                    btn.classList.add('active');
+                }
+            });
+        });
+
+        // Strict Numerical Pacenote Grading (No hairpins)
+        function calculateGrade(angle, system) {
+            const absAngle = Math.abs(angle);
+            const dir = angle > 0 ? 'R' : (angle < 0 ? 'L' : '');
+            
+            if (absAngle < 3) return 'STRAIGHT';
+
+            if (system === 'rev16') {
+                // 6 Fast / 1 Tight
+                if (absAngle < 15) return `${dir}6`;
+                if (absAngle < 30) return `${dir}5`;
+                if (absAngle < 45) return `${dir}4`;
+                if (absAngle < 60) return `${dir}3`;
+                if (absAngle < 75) return `${dir}2`;
+                return `${dir}1`;
+            } else if (system === 'std16') {
+                // 1 Fast / 6 Tight
+                if (absAngle < 15) return `${dir}1`;
+                if (absAngle < 30) return `${dir}2`;
+                if (absAngle < 45) return `${dir}3`;
+                if (absAngle < 60) return `${dir}4`;
+                if (absAngle < 75) return `${dir}5`;
+                return `${dir}6`;
+            } else if (system === 'scale19') {
+                // 1–9 Fine Scale
+                const val = Math.min(9, Math.ceil(absAngle / 10));
+                return `${dir}${val}`;
+            }
+            return 'STRAIGHT';
+        }
+
+        function updateReadouts() {
+            readoutAngle.textContent = `${currentAngle > 0 ? '+' : ''}${currentAngle.toFixed(1)}°`;
+            readoutGrade.textContent = calculateGrade(currentAngle, activeSystem);
+        }
+
+        function drawOverlay() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const originX = canvas.width * originXRatio;
+            const originY = canvas.height * originYRatio;
+            const radius = Math.min(canvas.width, canvas.height) * 0.35;
+
+            // Alignment Crosshair
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(0, originY);
+            ctx.lineTo(canvas.width, originY);
+            ctx.moveTo(originX, 0);
+            ctx.lineTo(originX, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Protractor Arc
+            ctx.beginPath();
+            ctx.arc(originX, originY, radius, -Math.PI, 0, false);
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Active Tilt Sweep Arc
+            const radAngle = (currentAngle - 90) * (Math.PI / 180);
+            const zeroRad = -Math.PI / 2;
+
+            const absA = Math.abs(currentAngle);
+            let strokeColor = '#00e676';
+            if (absA > 25) strokeColor = '#ffcc00';
+            if (absA > 50) strokeColor = '#ff9100';
+            if (absA > 70) strokeColor = '#ff3d00';
+
+            ctx.beginPath();
+            if (currentAngle >= 0) {
+                ctx.arc(originX, originY, radius, zeroRad, radAngle, false);
+            } else {
+                ctx.arc(originX, originY, radius, radAngle, zeroRad, false);
+            }
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Tick Marks
+            for (let deg = -90; deg <= 90; deg += 15) {
+                const tickRad = (deg - 90) * (Math.PI / 180);
+                const x1 = originX + Math.cos(tickRad) * (radius - 8);
+                const y1 = originY + Math.sin(tickRad) * (radius - 8);
+                const x2 = originX + Math.cos(tickRad) * (radius + 8);
+                const y2 = originY + Math.sin(tickRad) * (radius + 8);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = deg === 0 ? 4 : 2;
+                ctx.stroke();
+
+                ctx.strokeStyle = deg === 0 ? '#ffcc00' : 'rgba(255, 255, 255, 0.85)';
+                ctx.lineWidth = deg === 0 ? 2 : 1;
+                ctx.stroke();
+            }
+
+            // Pointer Needle
+            const pointerX = originX + Math.cos(radAngle) * (radius + 16);
+            const pointerY = originY + Math.sin(radAngle) * (radius + 16);
+
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(pointerX, pointerY);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(pointerX, pointerY);
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Target Apex Pivot Point
+            ctx.beginPath();
+            ctx.arc(originX, originY, 7, 0, Math.PI * 2);
+            ctx.fillStyle = isDraggingOrigin ? '#ffcc00' : '#00e5ff';
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Text Badge
+            const gradeText = calculateGrade(currentAngle, activeSystem);
+            const labelStr = `${gradeText} (${currentAngle > 0 ? '+' : ''}${currentAngle.toFixed(1)}°)`;
+            
+            ctx.font = 'bold 15px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.lineWidth = 4;
+            ctx.strokeText(labelStr, originX, Math.max(25, originY - radius - 18));
+            ctx.fillStyle = strokeColor;
+            ctx.fillText(labelStr, originX, Math.max(25, originY - radius - 18));
+        }
+
+        // Touch & Drag Handling
+        canvas.addEventListener('pointerdown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const pivotX = canvas.width * originXRatio;
+            const pivotY = canvas.height * originYRatio;
+
+            const dist = Math.hypot(clickX - pivotX, clickY - pivotY);
+            if (dist < 35) {
+                isDraggingOrigin = true;
+            } else {
+                isRotating = true;
+                dragStartX = e.clientX;
+            }
+            try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            if (isDraggingOrigin) {
+                originXRatio = Math.max(0.1, Math.min(0.9, (e.clientX - rect.left) / canvas.width));
+                originYRatio = Math.max(0.1, Math.min(0.9, (e.clientY - rect.top) / canvas.height));
+                drawOverlay();
+            } else if (isRotating) {
+                const deltaX = e.clientX - dragStartX;
+                dragStartX = e.clientX;
+                setAngle(currentAngle + deltaX * 0.5);
+            }
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            isDraggingOrigin = false;
+            isRotating = false;
+            try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 1 : -1;
+            setAngle(currentAngle + delta);
+        }, { passive: false });
+
+        function logCurrentNote() {
+            const timeFormatted = timeDisplay.textContent;
+            const rawTime = video.currentTime || 0;
+            const grade = calculateGrade(currentAngle, activeSystem);
+            const noteMods = [...activeModifiers];
+            
+            if (customComment.value.trim() !== '') {
+                noteMods.push(customComment.value.trim());
+            }
+
+            const item = {
+                id: Date.now(),
+                timestamp: rawTime,
+                timeStr: timeFormatted,
+                angle: currentAngle.toFixed(1),
+                grade: grade,
+                modifiers: noteMods.join(', ') || '-'
+            };
+
+            logData.push(item);
+            renderLogTable();
+            showToast(`Logged: ${grade}`);
+            customComment.value = '';
+        }
+
+        function renderLogTable() {
+            logTableBody.innerHTML = '';
+            if (logData.length === 0) {
+                logTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#8b9bb4; padding:12px;">No pacenotes logged yet. Click 'Log Pacenote' to record entry.</td></tr>`;
+                return;
+            }
+
+            logData.forEach((item) => {
+                const tr = document.createElement('tr');
+
+                tr.innerHTML = `
+                    <td class="mono font-bold">${item.timeStr}</td>
+                    <td>${item.angle}°</td>
+                    <td><strong style="color:var(--accent-yellow)">${item.grade}</strong></td>
+                    <td>${item.modifiers}</td>
+                    <td style="text-align:center;" class="no-print">
+                        <button class="btn btn-danger btn-del" data-id="${item.id}" style="padding:2px 6px;">✕</button>
+                    </td>
+                `;
+
+                tr.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('btn-del')) return;
+                    if (video.src) {
+                        video.currentTime = item.timestamp;
+                        showToast(`Jumped to ${item.timeStr}`);
+                    }
+                });
+
+                logTableBody.appendChild(tr);
+            });
+
+            document.querySelectorAll('.btn-del').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    logData = logData.filter(i => i.id !== id);
+                    renderLogTable();
+                });
+            });
+        }
+
+        btnLogNote.addEventListener('click', logCurrentNote);
+
+        btnClearLog.addEventListener('click', () => {
+            logData = [];
+            renderLogTable();
+            showToast('Log cleared');
+        });
+
+        btnExportCSV.addEventListener('click', () => {
+            if (logData.length === 0) {
+                showToast('Log is empty');
+                return;
+            }
+            let csv = 'Timestamp,Time,Angle_Deg,Grade,Modifiers\n';
+            logData.forEach(i => {
+                csv += `"${i.timestamp}","${i.timeStr}","${i.angle}","${i.grade}","${i.modifiers.replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rally_recce_notes_${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('CSV Exported');
+        });
+
+        btnPrintSheet.addEventListener('click', () => window.print());
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 2200);
+        }
+
+        setAngle(0);
+        renderLogTable();
+    </script>
+</body>
+</html>
