@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pace Note Corner Gauge & Logger v1.3</title>
+    <title>Rally Recce Corner Gauge & Pacenote Logger v1.4</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -158,6 +158,21 @@
             background-color: #00cc52;
         }
 
+        .mod-btn {
+            background-color: #1f1f1f;
+            border: 1px solid #444;
+            color: #bbb;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 4px;
+        }
+
+        .mod-btn.selected {
+            background-color: var(--accent-yellow);
+            color: #000;
+            border-color: var(--accent-yellow);
+        }
+
         input[type="range"] {
             flex-grow: 1;
             accent-color: var(--accent-yellow);
@@ -252,7 +267,7 @@
 <body>
 
     <div class="container">
-        <h1>Rally Recce Corner Gauge v1.3</h1>
+        <h1>Rally Recce Corner Gauge & Logger v1.4</h1>
 
         <div class="stage-area" id="stage">
             <video id="videoPlayer" playsinline preload="auto" muted></video>
@@ -302,6 +317,18 @@
                 </div>
             </div>
 
+            <!-- Corner Modifiers -->
+            <div class="row">
+                <label>Modifiers:</label>
+                <div class="group" style="flex-wrap: wrap;">
+                    <button class="mod-btn" data-mod="Tightens">Tightens</button>
+                    <button class="mod-btn" data-mod="Opens">Opens</button>
+                    <button class="mod-btn" data-mod="Crest">Crest</button>
+                    <button class="mod-btn" data-mod="Don't Cut">Don't Cut</button>
+                    <button class="mod-btn" data-mod="Caution">Caution</button>
+                </div>
+            </div>
+
             <!-- Readout Box -->
             <div class="readout-box">
                 <div class="readout-item">
@@ -323,6 +350,7 @@
                 <div class="row">
                     <button id="btnLogNote" class="btn-log">+ Log Note (Press 'L')</button>
                     <div class="group">
+                        <button id="btnPrintSheet">Print Pacenote Sheet</button>
                         <button id="btnExportCSV">Export CSV</button>
                         <button id="btnClearLog">Clear</button>
                     </div>
@@ -334,7 +362,7 @@
                                 <th>Time</th>
                                 <th>Angle</th>
                                 <th>Clock</th>
-                                <th>Grade</th>
+                                <th>Grade & Modifiers</th>
                             </tr>
                         </thead>
                         <tbody id="logTableBody">
@@ -364,6 +392,7 @@
         const angleSlider = document.getElementById('angleSlider');
         const btnResetAngle = document.getElementById('btnResetAngle');
         const systemSelect = document.getElementById('systemSelect');
+        const modButtons = document.querySelectorAll('.mod-btn');
         
         const readoutAngle = document.getElementById('readoutAngle');
         const readoutClock = document.getElementById('readoutClock');
@@ -371,11 +400,13 @@
 
         const btnLogNote = document.getElementById('btnLogNote');
         const btnExportCSV = document.getElementById('btnExportCSV');
+        const btnPrintSheet = document.getElementById('btnPrintSheet');
         const btnClearLog = document.getElementById('btnClearLog');
         const logTableBody = document.getElementById('logTableBody');
 
         let currentAngle = 0;
         let activeSystem = 'std16';
+        let activeModifiers = [];
         let logData = [];
 
         let originXRatio = 0.5;
@@ -402,7 +433,6 @@
                 video.load();
                 video.playbackRate = 0.5;
                 
-                // Attempt play; if mobile autoplay block catches it, update button to manual play mode
                 video.play().then(() => {
                     btnPlayPause.textContent = 'Pause';
                 }).catch(() => {
@@ -435,7 +465,7 @@
 
         btnPlayPause.addEventListener('click', () => {
             if (video.paused) {
-                video.muted = false; // Unmute on explicit tap
+                video.muted = false;
                 video.play().then(() => {
                     btnPlayPause.textContent = 'Pause';
                 });
@@ -487,6 +517,20 @@
             updateReadouts();
         });
 
+        modButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mod = btn.dataset.mod;
+                if (activeModifiers.includes(mod)) {
+                    activeModifiers = activeModifiers.filter(m => m !== mod);
+                    btn.classList.remove('selected');
+                } else {
+                    activeModifiers.push(mod);
+                    btn.classList.add('selected');
+                }
+                updateReadouts();
+            });
+        });
+
         canvas.addEventListener('pointerdown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
@@ -528,174 +572,22 @@
         });
 
         function calculateGrade(absAngle, sign) {
-    const dir = sign > 0 ? 'R' : 'L';
-    if (absAngle < 5) return 'STRAIGHT';
+            const dir = sign > 0 ? 'R' : 'L';
+            if (absAngle < 5) return 'STRAIGHT';
 
-    if (activeSystem === 'std16') {
-        // 1 Fast -> 6 Tight
-        if (absAngle < 15) return `${dir}1`;
-        if (absAngle < 30) return `${dir}2`;
-        if (absAngle < 45) return `${dir}3`;
-        if (absAngle < 60) return `${dir}4`;
-        if (absAngle < 75) return `${dir}5`;
-        return `${dir}6`;
-    } else if (activeSystem === 'rev16') {
-        // 6 Fast -> 1 Tight
-        if (absAngle < 15) return `${dir}6`;
-        if (absAngle < 30) return `${dir}5`;
-        if (absAngle < 45) return `${dir}4`;
-        if (absAngle < 60) return `${dir}3`;
-        if (absAngle < 75) return `${dir}2`;
-        return `${dir}1`;
-    } else if (activeSystem === 'scale19') {
-        const num = Math.min(9, Math.ceil(absAngle / 10));
-        return `${dir}${num}`;
-    } else {
-        return `${dir} ${readoutClock.textContent}`;
-    }
-}
-
-        function updateReadouts() {
-            readoutAngle.textContent = `${currentAngle.toFixed(1)}°`;
-
-            let minutes = (currentAngle / 180) * 30;
-            let clockVal = 12 + (minutes / 60) * 12;
-            if (clockVal < 0) clockVal += 12;
-            let hrs = Math.floor(clockVal);
-            if (hrs === 0) hrs = 12;
-            let mins = Math.round((clockVal - Math.floor(clockVal)) * 60);
-            if (mins === 60) { hrs += 1; mins = 0; }
-            if (hrs > 12) hrs -= 12;
-
-            const clockStr = `${hrs}:${mins.toString().padStart(2, '0')}`;
-            readoutClock.textContent = clockStr;
-
-            const grade = calculateGrade(Math.abs(currentAngle), currentAngle);
-            readoutGrade.textContent = grade;
-        }
-
-        function drawOverlay() {
-            const w = canvas.width;
-            const h = canvas.height;
-            const cx = w * originXRatio;
-            const cy = h * originYRatio;
-            const radius = Math.min(w, h) * 0.38;
-
-            ctx.clearRect(0, 0, w, h);
-
-            ctx.strokeStyle = '#ffee00';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-            ctx.moveTo(cx - 14, cy); ctx.lineTo(cx + 14, cy);
-            ctx.moveTo(cx, cy - 14); ctx.lineTo(cx, cy + 14);
-            ctx.stroke();
-
-            ctx.save();
-            ctx.translate(cx, cy);
-
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-            ctx.beginPath();
-            ctx.moveTo(-w, 0); ctx.lineTo(w, 0);
-            ctx.stroke();
-
-            ctx.rotate((currentAngle * Math.PI) / 180);
-
-            ctx.strokeStyle = '#ffee00';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -radius * 1.15);
-            ctx.stroke();
-
-            ctx.fillStyle = '#ffee00';
-            ctx.beginPath();
-            ctx.moveTo(0, -radius * 1.2);
-            ctx.lineTo(-8, -radius * 1.1);
-            ctx.lineTo(8, -radius * 1.1);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = 'rgba(255, 238, 0, 0.6)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, -Math.PI, 0);
-            ctx.stroke();
-
-            for (let deg = -90; deg <= 90; deg += 15) {
-                const rad = ((deg - 90) * Math.PI) / 180;
-                const isMajor = deg % 30 === 0;
-                const innerR = isMajor ? radius - 14 : radius - 7;
-
-                ctx.strokeStyle = isMajor ? '#ffee00' : 'rgba(255,255,255,0.4)';
-                ctx.lineWidth = isMajor ? 2 : 1;
-                ctx.beginPath();
-                ctx.moveTo(Math.cos(rad) * innerR, Math.sin(rad) * innerR);
-                ctx.lineTo(Math.cos(rad) * radius, Math.sin(rad) * radius);
-                ctx.stroke();
-            }
-
-            ctx.restore();
-        }
-
-        function addLogEntry() {
-            const entry = {
-                time: formatTime(video.currentTime),
-                angle: `${currentAngle.toFixed(1)}°`,
-                clock: readoutClock.textContent,
-                grade: readoutGrade.textContent
-            };
-            logData.push(entry);
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${entry.time}</td>
-                <td>${entry.angle}</td>
-                <td>${entry.clock}</td>
-                <td style="color:var(--accent-green); font-weight:bold;">${entry.grade}</td>
-            `;
-            logTableBody.appendChild(tr);
-            logTableBody.parentElement.scrollTop = logTableBody.parentElement.scrollHeight;
-        }
-
-        btnLogNote.addEventListener('click', addLogEntry);
-
-        btnClearLog.addEventListener('click', () => {
-            logData = [];
-            logTableBody.innerHTML = '';
-        });
-
-        btnExportCSV.addEventListener('click', () => {
-            if (logData.length === 0) {
-                alert('No log entries to export.');
-                return;
-            }
-            let csv = 'Time,Angle,ClockFace,Grade\n';
-            logData.forEach(row => {
-                csv += `"${row.time}","${row.angle}","${row.clock}","${row.grade}"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `pace_notes_log_${Date.now()}.csv`;
-            a.click();
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                video.currentTime = Math.max(0, video.currentTime - 1/30);
-            } else if (e.key === 'ArrowRight') {
-                video.currentTime = Math.min(video.duration, video.currentTime + 1/30);
-            } else if (e.key === ' ') {
-                e.preventDefault();
-                btnPlayPause.click();
-            } else if (e.key.toLowerCase() === 'l') {
-                addLogEntry();
-            }
-        });
-
-        updateReadouts();
-    </script>
-</body>
-</html>
+            let baseGrade = '';
+            if (activeSystem === 'std16') {
+                if (absAngle < 15) baseGrade = `${dir}1`;
+                else if (absAngle < 30) baseGrade = `${dir}2`;
+                else if (absAngle < 45) baseGrade = `${dir}3`;
+                else if (absAngle < 60) baseGrade = `${dir}4`;
+                else if (absAngle < 75) baseGrade = `${dir}5`;
+                else baseGrade = `${dir}6`;
+            } else if (activeSystem === 'rev16') {
+                if (absAngle < 15) baseGrade = `${dir}6`;
+                else if (absAngle < 30) baseGrade = `${dir}5`;
+                else if (absAngle < 45) baseGrade = `${dir}4`;
+                else if (absAngle < 60) baseGrade = `${dir}3`;
+                else if (absAngle < 75) baseGrade = `${dir}2`;
+                else baseGrade = `${dir}1`;
+            } else if (activeSystem === 
