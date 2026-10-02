@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rally Recce Corner Gauge</title>
-    <!-- Tailwind CDN for standard browsers -->
+    <!-- Tailwind CDN with fallback -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
@@ -21,7 +21,6 @@
             --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
 
-        /* Fallback Core CSS to guarantee rendering even if CDN/Tailwind is blocked */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -213,7 +212,6 @@
             cursor: pointer;
         }
 
-        /* Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -224,6 +222,20 @@
         ::-webkit-scrollbar-thumb {
             background: #232a38;
             border-radius: 3px;
+        }
+
+        /* Standard Accessible Off-screen Input for Mobile Chrome/Safari */
+        .visually-hidden-input {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+            opacity: 0 !important;
         }
 
         @media print {
@@ -242,7 +254,7 @@
             <h1 class="text-base md:text-xl font-bold uppercase tracking-wider flex items-center gap-2 text-[#ffcc00]">
                 🏁 Rally Recce Corner Gauge
             </h1>
-            <span class="text-xs text-[#8b9bb4] mono">v2.2 Mobile Optimized</span>
+            <span class="text-xs text-[#8b9bb4] mono">v2.3 GitHub Ready</span>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -254,33 +266,33 @@
                     <!-- HTML5 Video Element -->
                     <video id="videoPlayer" class="w-full h-full object-contain pointer-events-none" playsinline webkit-playsinline preload="auto" muted></video>
                     
-                    <!-- Protractor & HUD Canvas -->
+                    <!-- Gauge Overlay Canvas -->
                     <canvas id="overlayCanvas" class="absolute inset-0 w-full h-full cursor-crosshair pointer-events-auto hidden"></canvas>
                     
-                    <!-- Compact Initial Overlay Placeholder to prevent overflow -->
+                    <!-- Startup Overlay Placeholder -->
                     <div id="placeholder" class="absolute inset-0 flex flex-col justify-center items-center p-2 sm:p-4 bg-[#0a0c10]/95 text-center gap-1.5 sm:gap-2 z-10 overflow-hidden">
                         <div class="text-2xl sm:text-3xl text-[#ffcc00]">📹</div>
                         <div class="text-xs sm:text-sm font-bold text-white">Tap or Choose Onboard Recce Video</div>
                         <div class="text-[10px] sm:text-xs text-[#8b9bb4] max-w-xs leading-tight">Supports MP4, WebM, or MOV onboard video</div>
                         
                         <div class="flex flex-wrap justify-center gap-2 mt-1">
-                            <label for="fileInput" class="btn btn-primary cursor-pointer text-[11px] sm:text-xs py-1 px-2.5">
+                            <button id="btnChooseLocal" class="btn btn-primary text-[11px] sm:text-xs py-1.5 px-3">
                                 📁 Choose Local Video
-                            </label>
-                            <button id="btnOpenUrlModal" class="btn text-[11px] sm:text-xs py-1 px-2.5 bg-[#1f2633] text-[#00e5ff] border-[#00e5ff]/30 hover:bg-[#2b3547]">
+                            </button>
+                            <button id="btnOpenUrlModal" class="btn text-[11px] sm:text-xs py-1.5 px-3 bg-[#1f2633] text-[#00e5ff] border-[#00e5ff]/30 hover:bg-[#2b3547]">
                                 🔗 Open Video URL
                             </button>
                         </div>
                     </div>
 
-                    <!-- Hidden File Input -->
-                    <input type="file" id="fileInput" accept="video/*" class="hidden">
+                    <!-- Mobile-compatible Off-screen File Input -->
+                    <input type="file" id="fileInput" accept="video/mp4,video/webm,video/quicktime,video/*" class="visually-hidden-input">
                 </div>
 
                 <!-- Control Buttons Bar -->
                 <div class="controls-bar flex flex-wrap items-center justify-between gap-2 p-2 bg-black/40 rounded-lg border border-white/5">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <label for="fileInput" class="btn text-xs py-1.5 px-2.5">📂 Open</label>
+                        <button id="btnOpen" class="btn text-xs py-1.5 px-2.5">📂 Open</button>
                         <button id="btnUrlInput" class="btn text-xs py-1.5 px-2.5">🔗 URL</button>
                         <button id="btnPlayPause" class="btn btn-primary text-xs py-1.5 px-3">▶ Play</button>
                         <button id="btnStepBack" title="Step -1 frame" class="btn text-xs py-1.5 px-2">◀ -1f</button>
@@ -423,6 +435,8 @@
         const placeholder = document.getElementById('placeholder');
         const fileInput = document.getElementById('fileInput');
         
+        const btnChooseLocal = document.getElementById('btnChooseLocal');
+        const btnOpen = document.getElementById('btnOpen');
         const btnUrlInput = document.getElementById('btnUrlInput');
         const btnOpenUrlModal = document.getElementById('btnOpenUrlModal');
         const urlModal = document.getElementById('urlModal');
@@ -450,19 +464,4 @@
         const btnLogNote = document.getElementById('btnLogNote');
         const btnExportCSV = document.getElementById('btnExportCSV');
         const btnPrintSheet = document.getElementById('btnPrintSheet');
-        const btnClearLog = document.getElementById('btnClearLog');
-        const logTableBody = document.getElementById('logTableBody');
-        const toast = document.getElementById('toast');
-
-        // Application State
-        let currentAngle = 0;
-        let activeSystem = systemSelect.value || 'rev16';
-        let activeModifiers = [];
-        let logData = [];
-        let selectedSpeed = 0.5;
-        let currentVideoBlobUrl = null;
-        let animFrameId = null;
-
-        // HUD Apex pivot point (proportional)
-        let originXRatio = 0.5;
-        let originYRatio = 0
+        const btnClearLog = documen
