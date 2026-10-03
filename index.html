@@ -372,7 +372,6 @@
                     <h2 class="text-xs font-bold text-[#8b9bb4] uppercase tracking-wider">Pacenotes</h2>
                     <div class="flex items-center gap-1.5 no-print">
                         <button id="btnExportCSV" class="btn text-xs py-1 px-2.5">📊 CSV</button>
-                        <button id="btnPrintSheet" class="btn text-xs py-1 px-2.5">🖨️ Print</button>
                         <button id="btnClearLog" class="btn btn-danger text-xs py-1 px-2.5">🗑️ Clear</button>
                     </div>
                 </div>
@@ -397,7 +396,7 @@
     </div>
 
     <!-- TOAST BANNER -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-[#ffcc00] text-black font-extrabold px-4 py-2 rounded-lg shadow-2xl transition-all duration-300 translate-y-20 opacity-0 z-50 pointer-events-none text-xs">
+    <div id="toast" class="fixed bottom-5 right-5 bg-[#ffcc00] text-black font-extrabold px-4 py-2 rounded-lg shadow-2xl transition-all duration-300 translate-y-20 opacity-0 z-50 pointer-events-none">
         Notification
     </div>
 
@@ -431,7 +430,6 @@
 
         const btnLogNote = document.getElementById('btnLogNote');
         const btnExportCSV = document.getElementById('btnExportCSV');
-        const btnPrintSheet = document.getElementById('btnPrintSheet');
         const btnClearLog = document.getElementById('btnClearLog');
         const logTableBody = document.getElementById('logTableBody');
         const toast = document.getElementById('toast');
@@ -888,8 +886,6 @@
             URL.revokeObjectURL(url);
             showToast('CSV Exported');
         });
-
-        btnPrintSheet.addEventListener('click', () => window.print());
 
         function showToast(msg) {
             toast.textContent = msg;
